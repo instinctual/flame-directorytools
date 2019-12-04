@@ -88,7 +88,7 @@ def get_mediahub_files_custom_ui_actions():
                    '-userRights',
                    '-description', 'TAR + List file',
                    'sh', '-c',
-                   '/usr/bin/tar -cvf {TARDIR}.tar -C {PARENTDIR} {BASENAME} ; '
+                   '/usr/bin/tar -cf {TARDIR}.tar -C {PARENTDIR} {BASENAME} ; '
                    ' tar -tvf {TARDIR}.tar | sort > {TARDIR}.tar.list']
         cmdline = [x.format(**vars) for x in cmdline]
 
