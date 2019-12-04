@@ -59,6 +59,7 @@ def get_mediahub_files_custom_ui_actions():
     for curitem in sel:
       if not os.path.isdir(curitem.path):
         continue
+      curitem.path = curitem.path.rstrip('/') # remove trailing slashes
       archive_path = curitem.path + '.tar'
       if os.path.isfile(archive_path) and \
          not prompt( "Overwrite " + archive_path + " ?", archive_path + " exists" ):
@@ -125,7 +126,14 @@ def test_tar(monkeypatch):
   tardir_go = actions[0]['actions'][0]['execute']
   cmdline = tardir_go(sel, fake_askyesno, True)
   assert cmdline[0] == config['CMDJOB']
-  assert '/usr/bin/tar -cvf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list' in cmdline
+  assert cmdline[11] == '/usr/bin/tar -cvf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
+
+  # Same, with trailing slash
+  sel = [PathItem('/tmp/foo/')]
+  tardir_go = actions[0]['actions'][0]['execute']
+  cmdline = tardir_go(sel, fake_askyesno, True)
+  assert cmdline[0] == config['CMDJOB']
+  assert cmdline[11] == '/usr/bin/tar -cvf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
 
   # Now actually try it
   rc = tardir_go(sel, fake_askyesno, False)
