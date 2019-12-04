@@ -13,4 +13,11 @@ TARDIR=$1
 BBMANAGER=manager
 BBGROUP=TARNODES
 CMDJOB=/opt/Autodesk/backburner/cmdjob
-$CMDJOB -manager:$BBMANAGER -group:$BBGROUP -priority:30 -jobName "`basename $TARDIR` DCDM" -userRights -description "TAR + List file" sh -c "/usr/bin/tar -cvf $TARDIR.tar -C `dirname $TARDIR` `basename $TARDIR` ; tar -tvf $TARDIR.tar | sort > $TARDIR.tar.list"
+$CMDJOB -manager:$BBMANAGER \
+        -group:$BBGROUP \
+        -priority:30 \
+        -jobName "`basename $TARDIR` DCDM" \
+        -userRights \
+        -description "TAR + List file" \
+        sh -c "/usr/bin/tar -cvf $TARDIR.tar -C `dirname $TARDIR` `basename $TARDIR` ; \
+               tar -tvf $TARDIR.tar | sort > $TARDIR.tar.list"
