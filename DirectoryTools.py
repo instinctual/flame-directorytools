@@ -13,6 +13,9 @@
 
 
 import os, subprocess, time, tempfile, shlex
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('DirectoryTools.tar')
 
 config = dict(
   BBMANAGER="manager",
@@ -37,60 +40,70 @@ def ask_yesno(dlg_msg, dlg_title):
   else:
   	return( True )
 
-#
-
 
 ##### Main Flame hook handler
 #####
 
 def get_mediahub_files_custom_ui_actions():
 
-  def menu_enabled(sel) :
-    if os.path.isdir( sel[0].path ) :
-      return True
-    else :
-      return False
+  def menu_enabled(sel):
+    logger.debug('menu_enabled(%s)...', [x.path for x in sel])
+    is_enabled = False
+    for item in sel:
+      if os.path.isdir(item.path):
+        is_enabled = True
+    logger.info('menu_enabled(%s) = %s', [x.path for x in sel], is_enabled)
+    return is_enabled
 
   def tardir_go(sel, prompt=ask_yesno, test_mode=False) :
-    if not prompt('{} folder(s) selected for TAR; OK?'.format(len(sel)),
-                  'tarring {} folder(s)'.format(len(sel))):
-      return
+    try:
+      logger.info('tardir_go(%s, test_mode=%s)', [x.path for x in sel], test_mode)
+      plural = "s" if len(sel) > 1 else ""
+      if not prompt('{} folder{} selected for TAR; OK?'.format(len(sel), plural),
+                    'tarring {} folder{}'.format(len(sel), plural)):
+        return
 
-    for curitem in sel:
-      if not os.path.isdir(curitem.path):
-        continue
-      curitem.path = curitem.path.rstrip('/') # remove trailing slashes
-      archive_path = curitem.path + '.tar'
-      if os.path.isfile(archive_path) and \
-         not prompt( "Overwrite " + archive_path + " ?", archive_path + " exists" ):
-        continue
+      returncodes = []
+      for curitem in sel:
+        if not os.path.isdir(curitem.path):
+          continue
+        path = curitem.path.rstrip('/') # remove trailing slashes
+        archive_path = path + '.tar'
+        if os.path.isfile(archive_path) and \
+           not prompt( "Overwrite " + archive_path + " ?", archive_path + " exists" ):
+          continue
 
-      # Run on Backburner using cmdjob
-      vars = config.copy()
-      vars['TARDIR'] = curitem.path
-      vars['BASENAME'] = os.path.basename(curitem.path)
-      vars['JOBNAME'] = os.path.basename(curitem.path) + ' DCDM'
-      vars['PARENTDIR'] = os.path.dirname(curitem.path)
+        # Run on Backburner using cmdjob
+        vars = config.copy()
+        vars['TARDIR'] = path
+        vars['BASENAME'] = os.path.basename(path)
+        vars['JOBNAME'] = os.path.basename(path) + ' DCDM'
+        vars['PARENTDIR'] = os.path.dirname(path)
 
-      cmdline = ['{CMDJOB}',
-                 '-manager:{BBMANAGER}',
-                 '-group:{BBGROUP}',
-                 '-priority:{PRIORITY}',
-                 '-jobName', '{JOBNAME}',
-                 '-userRights',
-                 '-description', 'TAR + List file',
-                 'sh', '-c',
-                 '/usr/bin/tar -cvf {TARDIR}.tar -C {PARENTDIR} {BASENAME} ; '
-                 ' tar -tvf {TARDIR}.tar | sort > {TARDIR}.tar.list']
-      cmdline = [x.format(**vars) for x in cmdline]
+        cmdline = ['{CMDJOB}',
+                   '-manager:{BBMANAGER}',
+                   '-group:{BBGROUP}',
+                   '-priority:{PRIORITY}',
+                   '-jobName', '{JOBNAME}',
+                   '-userRights',
+                   '-description', 'TAR + List file',
+                   'sh', '-c',
+                   '/usr/bin/tar -cvf {TARDIR}.tar -C {PARENTDIR} {BASENAME} ; '
+                   ' tar -tvf {TARDIR}.tar | sort > {TARDIR}.tar.list']
+        cmdline = [x.format(**vars) for x in cmdline]
 
-      if test_mode:
-        return cmdline
+        if test_mode:
+          return cmdline
 
-      # Run job
-      cmd = subprocess.Popen(cmdline)
-      rc = cmd.wait()
-      return rc
+        # Run job
+        cmd = subprocess.Popen(cmdline)
+        rc = cmd.wait()
+        logger.info('tardir_go("%s") returns status %s', path, rc)
+        returncodes.append(rc)
+      return returncodes
+    except Exception as e:
+      logger.exception('tardir_go: got exception %s', e)
+      raise
 
   return [
     {
@@ -124,6 +137,12 @@ def test_tar(monkeypatch):
   actions = get_mediahub_files_custom_ui_actions()
   sel = [PathItem('/tmp/foo')]
   tardir_go = actions[0]['actions'][0]['execute']
+  is_enabled = actions[0]['actions'][0]['isEnabled']
+
+  # test is_enabled
+  status = is_enabled(sel)
+  assert status == True
+
   cmdline = tardir_go(sel, fake_askyesno, True)
   assert cmdline[0] == config['CMDJOB']
   assert cmdline[11] == '/usr/bin/tar -cvf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
@@ -137,7 +156,15 @@ def test_tar(monkeypatch):
 
   # Now actually try it
   rc = tardir_go(sel, fake_askyesno, False)
-  assert rc in (0, 6)           # 0 = success, 6 = connection refused
+  assert rc[0] in (0, 6)           # 0 = success, 6 = connection refused
+
+  sel = [PathItem('/tmp/foo'), PathItem('/tmp/foo')]
+  # Try it with two paths selected
+  rc = tardir_go(sel, fake_askyesno, False)
+  assert len(rc) == 2
+  assert rc[0] in (0, 6)
+  assert rc[1] in (0, 6)
+
 
   # Clean up
   for d in ('/tmp/foo/bar', '/tmp/foo'):
