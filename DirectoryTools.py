@@ -14,7 +14,7 @@
 
 import os, subprocess, time, tempfile, shlex
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger('DirectoryTools.tar')
 
 config = dict(
@@ -145,14 +145,14 @@ def test_tar(monkeypatch):
 
   cmdline = tardir_go(sel, fake_askyesno, True)
   assert cmdline[0] == config['CMDJOB']
-  assert cmdline[11] == '/usr/bin/tar -cvf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
+  assert cmdline[11] == '/usr/bin/tar -cf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
 
   # Same, with trailing slash
   sel = [PathItem('/tmp/foo/')]
   tardir_go = actions[0]['actions'][0]['execute']
   cmdline = tardir_go(sel, fake_askyesno, True)
   assert cmdline[0] == config['CMDJOB']
-  assert cmdline[11] == '/usr/bin/tar -cvf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
+  assert cmdline[11] == '/usr/bin/tar -cf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
 
   # Now actually try it
   rc = tardir_go(sel, fake_askyesno, False)
