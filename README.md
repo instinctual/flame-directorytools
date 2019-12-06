@@ -10,8 +10,11 @@ This script is licensed under the Creative Commons Attribution-ShareAlike [CC BY
 
 DirectoryTools is a Python script for **Autodesk Flame 2020 and above** that
 adds a context menu to the MediaHub letting you TAR directories
-from within the Flame file browser.  This version is modified by Instinctual to submit the TAR process to a Backburner queue for processing by Backburner Servers.
+from within the Flame file browser.  
 
+## Instinctual modifications:
+1) TAR process is submitted to a Backburner queue for processing by Backburner Servers.
+2) ZIP stuff has been removed as it is not relavent to our workflow.
 
 ## Installing
 
