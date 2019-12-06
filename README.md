@@ -1,5 +1,6 @@
 # Flame DirectoryTools
 by Bob Maple (bobm-matchbox [at] idolum.com)
+Instinctual version.
 
 This script is licensed under the Creative Commons Attribution-ShareAlike [CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
 
@@ -7,8 +8,8 @@ This script is licensed under the Creative Commons Attribution-ShareAlike [CC BY
 ## What
 
 DirectoryTools is a Python script for **Autodesk Flame 2020 and above** that
-adds a context menu to the MediaHub letting you TAR or ZIP directories
-from within the Flame file browser.
+adds a context menu to the MediaHub letting you TAR directories
+from within the Flame file browser.  This version is modified by Instinctual to submit the TAR process to a Backburner queue for processing by Backburner Servers.
 
 
 ## Installing
@@ -29,28 +30,10 @@ reload all Python hooks.
 
 From within MediaHub, select a directory or directories and right-click to
 bring up the context menu. You should see a new item called **Directory Tools**
-at or near the bottom of the menu, and can choose to either TAR or ZIP the
+at or near the bottom of the menu, and can choose to TAR the
 selected directories. If multiple directories are selected, each one will be
 tarred or zipped separately in their own archive.
 
 ### Notes on TAR files
 After the .tar file is created, a companion file called .tar.list is created
 showing the contents of the archive.
-
-### Notes on ZIP files
-You may optionally encrypt the .zip with a password; simply enter the desired
-password when asked. If you do not want a password-protected zip, leave it
-blank or hit the Cancel button.
-
-**SECURITY NOTE:** Please be aware that the password is passed to zip on the
-commandline and is therefore insecure; if other users are logged in to
-the workstation at the same time, they can potentially see the process running
-with all its arguments including the password, and/or get it from the
-temporary script file DirectoryTools makes in /tmp/ while it's running, or
-afterwards if for some reason it fails to delete its self.
-
-### Notes for all files
-The tar or zip process is run in the background and there is no GUI
-indication when it's done. However, while the archive is being created
-it will have "_busy" on the end of the filename which gets removed
-once the archive is complete.
