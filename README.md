@@ -1,6 +1,7 @@
 # Flame DirectoryTools
-by Bob Maple (bobm-matchbox [at] idolum.com)
-Instinctual version.
+Original by Bob Maple (bobm-matchbox [at] idolum.com)
+
+Instinctual version by GaryO.
 
 This script is licensed under the Creative Commons Attribution-ShareAlike [CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
 
