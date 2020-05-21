@@ -36,9 +36,9 @@ def ask_yesno(dlg_msg, dlg_title):
   res = qtMsgBox.exec_()
 
   if res == QMessageBox.Cancel :
-  	return( False )
+    return( False )
   else:
-  	return( True )
+    return( True )
 
 
 ##### Main Flame hook handler
@@ -54,6 +54,17 @@ def get_mediahub_files_custom_ui_actions():
         is_enabled = True
     logger.info('menu_enabled(%s) = %s', [x.path for x in sel], is_enabled)
     return is_enabled
+
+  def rreplace(s, old, new, count):
+    """Replace in s the rightmost 'count' occurrences of old with new"""
+    return new.join(s.rsplit(old, count))
+
+  def get_dest_path(srcpath):
+    destpath = srcpath
+    found = destpath.rfind('_xyz/')
+    if found >= 0:
+      destpath = rreplace(destpath, '_xyz/', '_dcdm/', 1)
+    return destpath
 
   def tardir_go(sel, prompt=ask_yesno, test_mode=False) :
     try:
@@ -73,9 +84,11 @@ def get_mediahub_files_custom_ui_actions():
            not prompt( "Overwrite " + archive_path + " ?", archive_path + " exists" ):
           continue
 
+        destpath = get_dest_path(path)
+
         # Run on Backburner using cmdjob
         vars = config.copy()
-        vars['TARDIR'] = path
+        vars['TARNAME'] = destpath
         vars['BASENAME'] = os.path.basename(path)
         vars['JOBNAME'] = os.path.basename(path) + ' DCDM'
         vars['PARENTDIR'] = os.path.dirname(path)
@@ -88,8 +101,8 @@ def get_mediahub_files_custom_ui_actions():
                    '-userRights',
                    '-description', 'TAR + List file',
                    'sh', '-c',
-                   '/usr/bin/tar -cf {TARDIR}.tar -C {PARENTDIR} {BASENAME} ; '
-                   ' tar -tvf {TARDIR}.tar | sort > {TARDIR}.tar.list']
+                   '/usr/bin/tar -cf {TARNAME}.tar -C {PARENTDIR} {BASENAME} ; '
+                   ' tar -tvf {TARNAME}.tar | sort > {TARNAME}.tar.list']
         cmdline = [x.format(**vars) for x in cmdline]
 
         if test_mode:
@@ -128,7 +141,9 @@ def test_tar(monkeypatch):
   def fake_askyesno(msg, title):
     return True
 
-  for d in ('/tmp/foo', '/tmp/foo/bar'):
+  for d in ('/tmp/foo', '/tmp/foo/bar',
+            '/tmp/foo_xyz', '/tmp/foo_xyz/sub', '/tmp/foo_xyz/sub/sub2',
+            '/tmp/foo_dcdm'):
     try:
       os.mkdir(d)
     except OSError:
@@ -149,10 +164,22 @@ def test_tar(monkeypatch):
 
   # Same, with trailing slash
   sel = [PathItem('/tmp/foo/')]
-  tardir_go = actions[0]['actions'][0]['execute']
   cmdline = tardir_go(sel, fake_askyesno, True)
   assert cmdline[0] == config['CMDJOB']
   assert cmdline[11] == '/usr/bin/tar -cf /tmp/foo.tar -C /tmp foo ;  tar -tvf /tmp/foo.tar | sort > /tmp/foo.tar.list'
+
+  # Try with a _xyz path, should get substituted
+  sel = [PathItem('/tmp/foo_xyz/sub')]
+  cmdline = tardir_go(sel, fake_askyesno, True)
+  assert cmdline[0] == config['CMDJOB']
+  assert cmdline[11] == '/usr/bin/tar -cf /tmp/foo_dcdm/sub.tar -C /tmp/foo_xyz sub ;  tar -tvf /tmp/foo_dcdm/sub.tar | sort > /tmp/foo_dcdm/sub.tar.list'
+
+  # Try another _xyz path, deeper
+  sel = [PathItem('/tmp/foo_xyz/sub/sub2')]
+  cmdline = tardir_go(sel, fake_askyesno, True)
+  assert cmdline[0] == config['CMDJOB']
+  assert cmdline[11] == '/usr/bin/tar -cf /tmp/foo_dcdm/sub/sub2.tar -C /tmp/foo_xyz/sub sub2 ;  tar -tvf /tmp/foo_dcdm/sub/sub2.tar | sort > /tmp/foo_dcdm/sub/sub2.tar.list'
+
 
   # Now actually try it
   rc = tardir_go(sel, fake_askyesno, False)
