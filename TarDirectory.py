@@ -26,14 +26,22 @@ config = dict(
 
 def ask_yesno(dlg_msg, dlg_title):
   """Prompt user for yes/cancel using Qt widgets"""
-  from PySide2.QtWidgets import QMessageBox
+  try:
+    from PySide6.QtWidgets import QMessageBox
+    usingPyside6 = True
+  except ImportError:
+    from PySide2.QtWidgets import QMessageBox
+    usingPyside6 = False
 
   qtMsgBox = QMessageBox()
   qtMsgBox.setWindowTitle( dlg_title )
   qtMsgBox.setText( dlg_msg )
   qtMsgBox.setStandardButtons( QMessageBox.Yes | QMessageBox.Cancel )
   qtMsgBox.setDefaultButton( QMessageBox.Yes )
-  res = qtMsgBox.exec_()
+  if usingPyside6:
+    res = qtMsgBox.exec()
+  else:
+    res = qtMsgBox.exec_()
 
   if res == QMessageBox.Cancel :
     return( False )
